@@ -38,9 +38,19 @@ jobs:
           mkdir -p dist
           cp build/SteamClone.exe dist/
           windeployqt --release --no-translations dist/SteamClone.exe
-          cp /ucrt64/bin/libstdc++-6.dll dist/
-          cp /ucrt64/bin/libgcc_s_seh-1.dll dist/
-          cp /ucrt64/bin/libwinpthread-1.dll dist/
+
+          # Автоматический рекурсивный сбор всех зависимостей UCRT64 (libb2, pcre2, zstd, gcc runtime)
+          for i in 1 2 3; do
+            find dist/ -type f \( -name "*.exe" -o -name "*.dll" \) -exec ldd {} + 2>/dev/null \
+              | grep "/ucrt64/bin" \
+              | awk '{print $3}' \
+              | sort -u \
+              | while read -r lib; do
+                  if [ -f "$lib" ]; then
+                    cp -u "$lib" dist/
+                  fi
+                done
+          done
 
       - name: Upload Executable Artifact
         uses: actions/upload-artifact@v4
