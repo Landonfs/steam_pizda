@@ -15,31 +15,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup MSVC environment
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+      - name: Setup MSYS2 and Install Qt6
+        uses: msys2/setup-msys2@v2
         with:
-          version: '6.6.2'
-          arch: 'win64_msvc2019_64'
-          modules: 'qtbase'
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-qt6-base
 
-      - name: Configure CMake
+      - name: Configure and Build
+        shell: msys2 {0}
         run: |
-          cmake -B build -S . -G "Visual Studio 17 2022" -A x64 -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
 
-      - name: Build Project
+      - name: Collect Dependencies
+        shell: msys2 {0}
         run: |
-          cmake --build build --config Release
-
-      - name: Collect Dependencies (windeployqt)
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path dist
-          Copy-Item build\Release\SteamClone.exe dist\
-          # Запуск утилиты windeployqt для копирования необходимых Qt DLL
-          windeployqt --release --no-translations dist\SteamClone.exe
+          mkdir dist
+          cp build/SteamClone.exe dist/
+          windeployqt-qt6 --release --no-translations dist/SteamClone.exe
 
       - name: Upload Executable Artifact
         uses: actions/upload-artifact@v4
