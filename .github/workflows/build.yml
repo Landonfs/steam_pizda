@@ -3,8 +3,6 @@ name: Build Windows Executable
 on:
   push:
     branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -39,7 +37,7 @@ jobs:
           cp build/SteamClone.exe dist/
           windeployqt --release --no-translations dist/SteamClone.exe
 
-          # Автоматический рекурсивный сбор всех зависимостей UCRT64 (libb2, pcre2, zstd, gcc runtime)
+          # Сбор всех связанных системных dll
           for i in 1 2 3; do
             find dist/ -type f \( -name "*.exe" -o -name "*.dll" \) -exec ldd {} + 2>/dev/null \
               | grep "/ucrt64/bin" \
